@@ -37,7 +37,10 @@ setup(
     keywords='nosql git database',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    install_requires=['dulwich'],
+    install_requires=[
+        'dulwich',
+        'python-dateutil',
+    ],
 
     extras_require={
         'dev': ['check-manifest'],
