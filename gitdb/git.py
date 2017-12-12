@@ -1,24 +1,26 @@
 # from dulwich.repo import Repo
+from __future__ import unicode_literals
 from dulwich.objects import Commit, Tree, Blob
 import time
 from dateutil.tz import tzlocal
 import os
 from functools import reduce
 
+ENCODING = 'utf-8'
 
 class GitData(object):
     def __init__(self, data, base_tree):
         self.data = {}
         for data_obj in data:
-            self.data[data_obj.path] = Blob.from_string(data_obj.content.encode('utf8'))
+            self.data[data_obj.path] = Blob.from_string(data_obj.content.encode(ENCODING))
             path = list(os.path.split(data_obj.path))
             last_name = path.pop(-1)
             last_child = (0o100644, self.data[data_obj.path].id)
             while path:
-                self.data.setdefault(os.path.join(*path), Tree()).add(last_name.encode('utf8'), *last_child)
+                self.data.setdefault(os.path.join(*path), Tree()).add(last_name.encode(ENCODING), *last_child)
                 last_child = (0o040000, self.data[os.path.join(*path)].id)
                 last_name = path.pop(-1)
-            base_tree.add(last_name.encode('utf8'), *last_child)
+            base_tree.add(last_name.encode(ENCODING), *last_child)
 
     def items(self):
         for key in reversed(sorted(self.data)):
@@ -48,6 +50,12 @@ class GitRepo(object):
         self.__add_object__(commit)
         self.repo.refs[b'HEAD'] = commit.id
 
+    def get_object(self, path):
+        path = os.path.split(path)
+        obj = self.current_tree
+        for name in path:
+            obj = self.__get_object__(obj[name.encode(ENCODING)][1])
+        return obj.data.decode(ENCODING)
 
     def __get_object__(self, sha1):
         return self.repo.get_object(sha1)
@@ -62,15 +70,15 @@ class GitRepo(object):
 
     def __create_tree__(self, parent_list, child):
         tree = Tree()
-        parent_list[-1].add(child.encode('utf8'), 0o040000, tree.id)
+        parent_list[-1].add(child.encode(ENCODING), 0o040000, tree.id)
         parent_list.append(tree)
         return parent_list
 
     def __create_commit__(self, message, author):
         commit = Commit()
-        commit.author = commit.committer = author.encode('utf8')
+        commit.author = commit.committer = author.encode(ENCODING)
         commit.author_time = commit.commit_time = int(time.time())
         commit.author_timezone = commit.commit_timezone = 0
-        commit.message = message.encode('utf8')
+        commit.message = message.encode(ENCODING)
         return commit
 

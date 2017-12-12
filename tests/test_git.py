@@ -5,7 +5,6 @@ except ImportError:
 
 from dulwich.repo import MemoryRepo
 from dulwich.objects import Tree, Blob
-from time import time as real_time
 from gitdb.repo import Data
 from gitdb.git import GitRepo
 
@@ -40,10 +39,7 @@ def test_current_tree_should_be_from_current_commit():
     assert GitRepo(repo).current_tree.id == tree.id
 
 
-@patch('time.time')
-def test_commit_new_data(time):
-    current_time = real_time()
-    time.return_value = current_time
+def test_commit_new_data():
     data = Data('sample/data.yml', 'test content')
     data2 = Data('sample2/data2.yml', 'test content2')
     data3 = Data('sample2/data3.yml', 'test content3')
@@ -55,6 +51,22 @@ def test_commit_new_data(time):
     git_repo.commit([data, data2, data3], message, author)
 
     assert sorted(list(git_repo.current_tree)) == [b'sample', b'sample2']
+    assert git_repo.current_commit.message == message.encode('utf8')
+    assert git_repo.current_commit.author.startswith(author.encode('utf8'))
     assert repo.get_object(repo.get_object(git_repo.current_tree[b'sample'][1])[b'data.yml'][1]).data == b'test content'
     assert repo.get_object(repo.get_object(git_repo.current_tree[b'sample2'][1])[b'data2.yml'][1]).data == b'test content2'
     assert repo.get_object(repo.get_object(git_repo.current_tree[b'sample2'][1])[b'data3.yml'][1]).data == b'test content3'
+
+
+def test_get_object():
+    data = Data('sample/data.yml', 'test content')
+    data2 = Data('sample2/data2.yml', 'test content2')
+    data3 = Data('sample2/data3.yml', 'test content3')
+    message = 'commit message'
+    author = 'commit author'
+    repo = MemoryRepo()
+
+    git_repo = GitRepo(repo)
+    git_repo.commit([data, data2, data3], message, author)
+
+    assert git_repo.get_object('sample/data.yml') == 'test content'
