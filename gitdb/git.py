@@ -4,7 +4,7 @@ from dulwich.objects import Commit, Tree, Blob
 import time
 from dateutil.tz import tzlocal
 import os
-from functools import reduce
+from functools import reduce, wraps
 
 ENCODING = 'utf-8'
 
@@ -25,6 +25,10 @@ class GitData(object):
     def items(self):
         for key in reversed(sorted(self.data)):
             yield self.data[key]
+
+
+def path_hygiene(path):
+    return [path_part for path_part in os.path.split(path) if path_part.strip()]
 
 
 class GitRepo(object):
@@ -51,11 +55,20 @@ class GitRepo(object):
         self.repo.refs[b'HEAD'] = commit.id
 
     def get_object(self, path):
-        path = os.path.split(path)
+        path = path_hygiene(path)
         obj = self.current_tree
         for name in path:
             obj = self.__get_object__(obj[name.encode(ENCODING)][1])
         return obj.data.decode(ENCODING)
+
+    def list(self, path):
+        path = path_hygiene(path)
+        obj = self.current_tree
+        for name in path:
+            obj = self.__get_object__(obj[name.encode(ENCODING)][1])
+
+        for name in obj:
+            yield self.__get_object__(obj[name][1]).data.decode(ENCODING)
 
     def __get_object__(self, sha1):
         return self.repo.get_object(sha1)

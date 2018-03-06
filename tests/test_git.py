@@ -1,7 +1,7 @@
 try:
-    from unittest.mock import patch
+    from unittest.mock import patch, MagicMock as Mock
 except ImportError:
-    from mock import patch
+    from mock import patch, MagicMock as Mock
 
 from dulwich.repo import MemoryRepo
 from dulwich.objects import Tree, Blob
@@ -40,9 +40,9 @@ def test_current_tree_should_be_from_current_commit():
 
 
 def test_commit_new_data():
-    data = Data('sample/data.yml', 'test content')
-    data2 = Data('sample2/data2.yml', 'test content2')
-    data3 = Data('sample2/data3.yml', 'test content3')
+    data = create_data('sample/data.yml', 'test content')
+    data2 = create_data('sample2/data2.yml', 'test content2')
+    data3 = create_data('sample2/data3.yml', 'test content3')
     message = 'commit message'
     author = 'commit author'
     repo = MemoryRepo()
@@ -59,9 +59,9 @@ def test_commit_new_data():
 
 
 def test_get_object():
-    data = Data('sample/data.yml', 'test content')
-    data2 = Data('sample2/data2.yml', 'test content2')
-    data3 = Data('sample2/data3.yml', 'test content3')
+    data = create_data('sample/data.yml', 'test content')
+    data2 = create_data('sample2/data2.yml', 'test content2')
+    data3 = create_data('sample2/data3.yml', 'test content3')
     message = 'commit message'
     author = 'commit author'
     repo = MemoryRepo()
@@ -70,3 +70,23 @@ def test_get_object():
     git_repo.commit([data, data2, data3], message, author)
 
     assert git_repo.get_object('sample/data.yml') == 'test content'
+
+
+def test_list():
+    data = create_data('sample/data.yml', 'test content')
+    data2 = create_data('sample2/data2.yml', 'test content2')
+    data3 = create_data('sample2/data3.yml', 'test content3')
+    message = 'commit message'
+    author = 'commit author'
+    repo = MemoryRepo()
+    git_repo = GitRepo(repo)
+    git_repo.commit([data, data2, data3], message, author)
+
+    assert all([ elem in ['test content2', 'test content3'] for elem in git_repo.list('sample2/')])
+
+
+def create_data(path, content):
+    data = Mock()
+    data.path = path
+    data.content = content
+    return data

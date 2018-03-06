@@ -40,6 +40,7 @@ setup(
     install_requires=[
         'dulwich',
         'python-dateutil',
+        'pyyaml',
     ],
 
     extras_require={
